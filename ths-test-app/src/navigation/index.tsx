@@ -1,15 +1,24 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStaticNavigation, StaticParamList } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Platform } from 'react-native';
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import {
+  createStaticNavigation,
+  NavigatorScreenParams,
+} from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { Platform } from "react-native";
 
-import HomeScreen from './screens/Home';
-import Listings from './screens/Listings';
-import NotFound from './screens/NotFound';
+import HomeScreen from "./screens/Home";
+import Listings from "./screens/Listings";
+import NotFound from "./screens/NotFound";
 
-import { HapticTab } from '../components/HapticTab';
-import { IconSymbol } from '../components/ui/IconSymbol';
-import TabBarBackground from '../components/ui/TabBarBackground';
+import { HapticTab } from "../components/HapticTab";
+import { IconSymbol } from "../components/ui/IconSymbol";
+import TabBarBackground from "../components/ui/TabBarBackground";
+import ListingDetailScreen from "./screens/ListingDetail";
+
+export type HomeTabsParamList = {
+  HomeScreen: undefined;
+  Listings: undefined;
+};
 
 const HomeTabs = createBottomTabNavigator({
   screens: {
@@ -17,14 +26,18 @@ const HomeTabs = createBottomTabNavigator({
       screen: HomeScreen,
       options: {
         headerShown: false,
-        tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        tabBarIcon: ({ color }) => (
+          <IconSymbol size={28} name="house.fill" color={color} />
+        ),
       },
     },
     Listings: {
       screen: Listings,
       options: {
         headerShown: false,
-        tabBarIcon: ({ color }) => <IconSymbol size={28} name="pawprint" color={color} />,
+        tabBarIcon: ({ color }) => (
+          <IconSymbol size={28} name="pawprint" color={color} />
+        ),
       },
     },
   },
@@ -35,12 +48,18 @@ const HomeTabs = createBottomTabNavigator({
     tabBarStyle: Platform.select({
       ios: {
         // Use a transparent background on iOS to show the blur effect
-        position: 'absolute' as const,
+        position: "absolute" as const,
       },
       default: {},
     }),
   },
 });
+
+export type RootStackParamList = {
+  HomeTabs: NavigatorScreenParams<HomeTabsParamList> | undefined;
+  NotFound: undefined;
+  ListingDetailScreen: { listingId: string };
+};
 
 const RootStack = createNativeStackNavigator({
   screens: {
@@ -53,18 +72,23 @@ const RootStack = createNativeStackNavigator({
     NotFound: {
       screen: NotFound,
       options: {
-        title: '404',
+        title: "404",
       },
       linking: {
-        path: '*',
+        path: "*",
       },
+    },
+    ListingDetailScreen: {
+      screen: ListingDetailScreen,
+      params: {
+        listingId: "" as string,
+      },
+      options: { title: "Listing Details" },
     },
   },
 });
 
 export const Navigation = createStaticNavigation(RootStack);
-
-type RootStackParamList = StaticParamList<typeof RootStack>;
 
 declare global {
   namespace ReactNavigation {
