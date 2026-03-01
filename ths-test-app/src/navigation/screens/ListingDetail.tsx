@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, ActivityIndicator } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useContext, useEffect, useState } from "react";
+import { Text, View, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LoggedInContext } from "../LoggedInContext";
 
 /**
  *  helper component to display a label and value in a section
@@ -35,24 +37,42 @@ export default function ListingDetailScreen({ route }: any) {
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
+  const { isLoggedIn } = useContext(LoggedInContext);
+  const navigation = useNavigation();
 
   useEffect(() => {
-    fetch(`/api/listings/${listingId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        setListing(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.log("Error fetching listing details:", err);
-        setLoading(false);
+    if (!isLoggedIn) {
+      // not authorised here, navigate them back to login
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "HomeTabs", params: { screen: "HomeScreen" } }],
       });
-  }, [listingId]);
+      Alert.alert(
+        "Access Denied",
+        "You must be logged in to view listing details.",
+      );
+    } else {
+      fetch(`/api/listings/${listingId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setListing(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.log("Error fetching listing details:", err);
+          setLoading(false);
+        });
+    }
+  }, [isLoggedIn, listingId, navigation]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {loading ? (
-        <ActivityIndicator testID="activity-indicator" size="large" color="#0000ff" />
+        <ActivityIndicator
+          testID="activity-indicator"
+          size="large"
+          color="#0000ff"
+        />
       ) : !listing ? (
         <Text style={styles.error}>Listing not found</Text>
       ) : (

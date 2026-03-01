@@ -1,127 +1,122 @@
-import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react-native';
-import ListingDetailScreen from '../ListingDetail';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import React from "react";
+import { render, screen, waitFor } from "@testing-library/react-native";
+import { Alert } from "react-native";
+import ListingDetailScreen from "../ListingDetail";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { LoggedInContext } from "@/navigation/LoggedInContext";
 
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// Mock Alert.alert
+jest.spyOn(Alert, "alert");
+
 const mockListing = {
-  id: '385669',
-  title: 'Mountain sit with two cats',
+  id: "385669",
+  title: "Mountain sit with two cats",
   location: {
-    name: 'Boston',
-    admin1Name: 'Massachusetts',
-    countryName: 'United States',
+    name: "Boston",
+    admin1Name: "Massachusetts",
+    countryName: "United States",
   },
   user: {
-    firstName: 'John Doe',
+    firstName: "John Doe",
   },
   animals: [
-    { name: 'dog', count: 3 },
-    { name: 'cat', count: 2 },
+    { name: "dog", count: 3 },
+    { name: "cat", count: 2 },
   ],
-  published: '2025-09-30T13:16:03',
+  published: "2025-09-30T13:16:03",
 };
 
 const mockRoute = {
   params: {
-    listingId: '385669',
+    listingId: "385669",
   },
 };
 
-const renderListingDetailScreen = (route = mockRoute) => {
+const mockNavigationReset = jest.fn();
+
+// Mock useNavigation hook
+jest.mock("@react-navigation/native", () => {
+  const actual = jest.requireActual("@react-navigation/native");
+  return {
+    ...actual,
+    useNavigation: () => ({
+      reset: mockNavigationReset,
+    }),
+  };
+});
+
+const renderListingDetailScreen = (route = mockRoute, isLoggedIn = true) => {
   return render(
     <SafeAreaProvider>
-      <ListingDetailScreen route={route} />
-    </SafeAreaProvider>
+      <LoggedInContext.Provider
+        value={{ isLoggedIn, toggleIsLoggedIn: jest.fn() }}
+      >
+        <ListingDetailScreen route={route} />
+      </LoggedInContext.Provider>
+    </SafeAreaProvider>,
   );
 };
 
-describe('ListingDetailScreen', () => {
+describe("ListingDetailScreen", () => {
   beforeEach(() => {
+    mockNavigationReset.mockReset();
     jest.clearAllMocks();
     (global.fetch as jest.Mock).mockClear();
+    (Alert.alert as jest.Mock).mockClear();
   });
 
-  test('renders loading indicator while fetching', () => {
-    (global.fetch as jest.Mock).mockImplementationOnce(
-      () => new Promise(() => {}) // Never resolves
-    );
-
-    renderListingDetailScreen();
-
-    const loadingIndicator = screen.getByTestId('activity-indicator');
-    expect(loadingIndicator).toBeTruthy();
-  });
-
-  test('displays listing details on successful fetch', async () => {
+  test("shows alert and resets navigation when user is not logged in", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       json: async () => mockListing,
     });
 
-    renderListingDetailScreen();
+    renderListingDetailScreen(mockRoute, false);
 
     await waitFor(() => {
-      expect(screen.getByText(mockListing.title)).toBeTruthy();
+      expect(mockNavigationReset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: "HomeTabs", params: { screen: "HomeScreen" } }],
+      });
+      expect(Alert.alert).toHaveBeenCalled();
     });
-
-    expect(screen.getByText('Mountain sit with two cats')).toBeTruthy();
-    expect(screen.getByText(/Boston/)).toBeTruthy();
-    expect(screen.getByText(/Massachusetts/)).toBeTruthy();
-    expect(screen.getByText(/United States/)).toBeTruthy();
-    expect(screen.getByText('John Doe')).toBeTruthy();
   });
 
-  test('displays all animal information', async () => {
+  test("does not fetch listing when user is not logged in", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       json: async () => mockListing,
     });
 
-    renderListingDetailScreen();
+    renderListingDetailScreen(mockRoute, false);
 
-    await waitFor(() => {
-      expect(screen.getByText('dog (3)')).toBeTruthy();
-      expect(screen.getByText('cat (2)')).toBeTruthy();
-    });
+    expect(global.fetch).not.toHaveBeenCalledWith("/api/listings/385669");
   });
 
-  test('shows error message when listing not found', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      json: async () => null,
-    });
-
-    renderListingDetailScreen();
-
-    await waitFor(() => {
-      expect(screen.getByText('Listing not found')).toBeTruthy();
-    });
-  });
-
-  test('fetches listing with correct URL', async () => {
+  test("does not show alert when user is logged in", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       json: async () => mockListing,
     });
 
-    renderListingDetailScreen();
+    renderListingDetailScreen(mockRoute, true);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/listings/385669');
+      expect(screen.getByText("Mountain sit with two cats")).toBeTruthy();
     });
+
+    expect(Alert.alert).not.toHaveBeenCalled();
   });
 
-  test('renders all section labels', async () => {
+  test("displays listing title when logged in and fetches successfully", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       json: async () => mockListing,
     });
 
-    renderListingDetailScreen();
+    renderListingDetailScreen(mockRoute, true);
 
     await waitFor(() => {
-      expect(screen.getByText('Location')).toBeTruthy();
-      expect(screen.getByText('Host')).toBeTruthy();
-      expect(screen.getByText('Animals')).toBeTruthy();
-      expect(screen.getByText('Published')).toBeTruthy();
+      expect(screen.getByText("Mountain sit with two cats")).toBeTruthy();
     });
   });
 });

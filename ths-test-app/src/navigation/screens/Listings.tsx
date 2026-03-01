@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import {
   Text,
   View,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { LoggedInContext } from "../LoggedInContext";
 
 interface Listing {
   id: number;
@@ -27,7 +29,11 @@ const ListingRow = (props: ListingRowProps) => {
   };
 
   return (
-    <TouchableOpacity style={styles.item} onPress={handlePress} testID="listing-item">
+    <TouchableOpacity
+      style={styles.item}
+      onPress={handlePress}
+      testID="listing-item"
+    >
       <Text style={styles.title}>{listing.title}</Text>
     </TouchableOpacity>
   );
@@ -36,7 +42,18 @@ const ListingRow = (props: ListingRowProps) => {
 export default function ListingsScreen() {
   const [listingData, setListingData] = useState<Listing[]>([]);
   const insets = useSafeAreaInsets();
+  const { isLoggedIn } = useContext(LoggedInContext);
   const navigation = useNavigation();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isLoggedIn) {
+        // not authorised here, navigate them back
+        navigation.goBack();
+        Alert.alert("Access Denied", "You must be logged in to view listings.");
+      }
+    }, [isLoggedIn, navigation]),
+  );
 
   useEffect(() => {
     fetch("/api/listings")
