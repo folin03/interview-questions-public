@@ -34,7 +34,9 @@ export function App() {
         }
         await import('../msw.polyfills');
         const { server } = await import('./mocks/server');
-        server.listen()
+        server.listen({
+          onUnhandledRequest: "bypass", // bypad internal react-native requests - it spams log console
+        });
         setServerStarted(true);
         SplashScreen.hide();
       }
