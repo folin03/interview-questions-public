@@ -10,6 +10,10 @@ import { LoggedInContext } from "./navigation/LoggedInContext";
 
 SplashScreen.preventAutoHideAsync();
 
+const linking = {
+  prefixes: ["ths-test-app://", "https://ths-test-app.com"],
+};
+
 export function App() {
   const [serverStarted, setServerStarted] = useState(false);
   const [isLoggedInRetrieved, setIsLoggedInRetrieved] = useState(false);
@@ -73,7 +77,7 @@ export function App() {
 
   return (
     <LoggedInContext.Provider value={{ isLoggedIn, toggleIsLoggedIn }}>
-      <Navigation ref={navigationRef} />
+      <Navigation ref={navigationRef} linking={linking} />
     </LoggedInContext.Provider>
   );
 }

@@ -84,6 +84,12 @@ const RootStack = createNativeStackNavigator({
         listingId: "" as string,
       },
       options: { title: "Listing Details" },
+      linking: {
+        path: "listing",
+        parse: {
+          listingId: (id) => String(id),
+        },
+      },
     },
   },
 });

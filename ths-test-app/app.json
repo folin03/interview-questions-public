@@ -7,7 +7,7 @@
     "icon": "src/assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "scheme": "thstestapp",
+    "scheme": "ths-test-app",
     "ios": {
       "bundleIdentifier": "com.trustedhousesitters.thstestapp",
       "supportsTablet": true
