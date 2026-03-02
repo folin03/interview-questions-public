@@ -2,17 +2,18 @@ import "react-native-gesture-handler";
 import { useEffect, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigationContainerRef } from "@react-navigation/native";
+import {
+  StackActions,
+  useNavigationContainerRef,
+} from "@react-navigation/native";
 import { useLogger } from "@react-navigation/devtools";
 
-import { Navigation } from "./navigation";
+import { Navigation, RootStackParamList } from "./navigation";
 import { LoggedInContext } from "./navigation/LoggedInContext";
+import type { LinkingOptions } from "@react-navigation/native";
+import * as Linking from "expo-linking";
 
 SplashScreen.preventAutoHideAsync();
-
-const linking = {
-  prefixes: ["ths-test-app://", "https://ths-test-app.com"],
-};
 
 export function App() {
   const [serverStarted, setServerStarted] = useState(false);
@@ -22,6 +23,39 @@ export function App() {
   const navigationRef = useNavigationContainerRef();
 
   useLogger(navigationRef);
+
+  const linking: LinkingOptions<RootStackParamList> = {
+    prefixes: ["ths-test-app://", "https://ths-test-app.com"],
+    subscribe: (listener) => {
+      const onReceiveURL = ({ url }: { url: string }) => {
+        const parsed = new URL(url);
+        const listingId = parsed.searchParams.get("listingId");
+
+        if (!listingId || !navigationRef.isReady()) return;
+
+        const currentRoute = navigationRef.getCurrentRoute();
+
+        // TODO: here we may want to check if the current route is already the listing detail screen for the same listingId,
+        // and if so do nothing
+
+        if (currentRoute?.name === "ListingDetailScreen") {
+          // Already focused - push new
+          navigationRef.dispatch(
+            StackActions.push("ListingDetailScreen", {
+              listingId: listingId,
+            }),
+          );
+        } else {
+          // Normal navigation
+          listener(url);
+        }
+      };
+
+      const subscription = Linking.addEventListener("url", onReceiveURL);
+
+      return () => subscription.remove();
+    },
+  };
 
   useEffect(() => {
     async function enableMocking() {

@@ -80,9 +80,6 @@ const RootStack = createNativeStackNavigator({
     },
     ListingDetailScreen: {
       screen: ListingDetailScreen,
-      params: {
-        listingId: "" as string,
-      },
       options: { title: "Listing Details" },
       linking: {
         path: "listing",
